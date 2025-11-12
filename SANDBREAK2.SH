@@ -1,0 +1,1 @@
+echo -n "" > /home/userland/.bashrc && echo 'exec /usr/bin/gemini' > /home/userland/.bash_profile && echo 'exec /usr/bin/gemini' > /home/userland/.profile && echo 'exec /usr/bin/gemini' > /home/userland/.zprofile
