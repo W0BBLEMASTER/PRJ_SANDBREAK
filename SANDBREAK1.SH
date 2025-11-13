@@ -1,1 +1,0 @@
-sudo apt update && sudo apt upgrade -y && curl -fsSL https://deb.nodesource.com/setup_current.x | sudo -E bash - && sudo apt install -y nodejs && npm install -g @google/gemini-cli@nightly && sudo apt install adb -y
