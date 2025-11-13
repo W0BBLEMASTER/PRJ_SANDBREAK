@@ -1,0 +1,1 @@
+apk update && apk upgrade -y && apk add nodejs-current npm adb && node -v && npm -v && npm install -g @google/gemini-cli@nightly
