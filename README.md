@@ -1,6 +1,6 @@
 # SANDBREAK: Your Personal Android CLI Powerhouse 🚀
 
-Tired of Android's file system restrictions? Bored and want to turn your UserLAnd environment into a dedicated terminal for ADB operations and deep Android file system access? SANDBREAK is a personal project designed to transform your UserLAnd setup into a lean, mean, CLI machine.
+Tired of Android's file system restrictions? Bored and want to turn your (*HOPEFULLY* ReTerminal, Termux, NeoTerm, ">_", Terminus, and others in DEBUG...) UserLAnd environment into a dedicated terminal for ADB operations and deep Android file system access? SANDBREAK is a personal project designed to transform your UserLAnd setup into a lean, mean, CLI machine.
 
 ## ✨ What is SANDBREAK?
 
