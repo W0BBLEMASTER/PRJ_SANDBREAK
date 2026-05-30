@@ -1,26 +1,21 @@
 #!/bin/bash
-# Monolithic acli Deployer - Iteration 13 (Clean Wrapper & No Abort Mask)
+# sb2.2.sh: Stable Native Deployer for Fresh UserLAnd Kali
 set -e
 
 # Configuration
 FB_ROOT="/home/userland/FAKEBOX"
 FB_BIN="$FB_ROOT/bin"
 
-# Symbols
-S_LOAD="[*]"
-S_DONE="[✓]"
-S_ERR="[?]"
-
-echo "$S_LOAD Preparing FAKEBOX environment..."
+echo "[*] Preparing FAKEBOX environment..."
 mkdir -p "$FB_BIN" "$FB_ROOT/.gemini"
 
 # 1. System Update and Dependencies
-echo "$S_LOAD Syncing system dependencies..."
+echo "[*] Syncing system dependencies..."
 sudo apt-get update -qq
 sudo apt-get install -yq adb git python3 curl gcc bsdutils < /dev/null
 
 # 2. Fetch Upstream Binary
-echo "$S_LOAD Fetching official Linux arm64 binary..."
+echo "[*] Fetching official Linux arm64 binary..."
 MANIFEST_URL="https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_arm64.json"
 DOWNLOAD_URL=$(curl -fsSL "$MANIFEST_URL" | grep -oP '"url":\s*"\K[^"]+')
 curl -fsSL "$DOWNLOAD_URL" -o "$FB_ROOT/agy.tar.gz"
@@ -28,8 +23,8 @@ mkdir -p "$FB_ROOT/extract_tmp"
 tar -xzf "$FB_ROOT/agy.tar.gz" -C "$FB_ROOT/extract_tmp"
 AGY_RAW=$(find "$FB_ROOT/extract_tmp" -type f \( -name "antigravity" -o -name "agy" \) | head -n 1)
 
-# 3. Correctly Scoped Binary Patching
-echo "$S_LOAD Applying precision VA39 memory surgery..."
+# 3. Correctly Scoped Binary Patching (Fixes Segfaults)
+echo "[*] Applying precision VA39 memory surgery..."
 cat << 'EOF' > "$FB_ROOT/patcher.py"
 import sys, shutil, struct, pathlib
 
@@ -66,7 +61,7 @@ if sec_lo is not None:
 else:
     lo, hi = 0, len(data)
 
-# A. FIPS Bypass (Exact sequence from sb2.sh)
+# A. FIPS Bypass
 fips_p = bytes.fromhex('e000003520008052f44f43a9f65742a9f85f41a9')
 fips_r = bytes.fromhex('1f2003d520008052f44f43a9f65742a9f85f41a9')
 if fips_p in data:
@@ -114,10 +109,10 @@ dst.chmod(0o755)
 EOF
 python3 "$FB_ROOT/patcher.py" "$AGY_RAW" "$FB_BIN/agy"
 rm -rf "$FB_ROOT/extract_tmp" "$FB_ROOT/patcher.py"
-echo "$S_DONE Patching complete."
+echo "[✓] Patching complete."
 
-# 4. Sandbreak Arbitrator Hooks (From A112.sh, NO ABORT OVERRIDE)
-echo "$S_LOAD Compiling sandbreak arbitrator..."
+# 4. Sandbreak Arbitrator Hooks
+echo "[*] Compiling sandbreak arbitrator..."
 cat << 'EOF' > "$FB_BIN/sandbreak.c"
 #define _GNU_SOURCE
 #include <errno.h>
@@ -164,10 +159,10 @@ long syscall(long n, ...) {
 }
 EOF
 gcc -shared -fPIC "$FB_BIN/sandbreak.c" -o "$FB_BIN/sandbreak.so" -ldl
-echo "$S_DONE Arbitrator ready."
+echo "[✓] Arbitrator ready."
 
-# 5. Final Launcher Deployment (acli, no Savant, Native Go Optimized)
-echo "$S_LOAD Deploying acli wrapper..."
+# 5. Final Launcher Deployment
+echo "[*] Deploying acli wrapper..."
 cat << EOF > "$FB_BIN/acli"
 #!/bin/bash
 FB_BIN_DIR="$FB_BIN"
@@ -194,4 +189,4 @@ chmod +x "$FB_BIN/acli"
 # Global Symlink
 sudo ln -sf "$FB_BIN/acli" /usr/local/bin/acli || true
 
-echo "$S_DONE Deployment finished."
+echo "[✓] SANDBREAK2 Deployment finished."
