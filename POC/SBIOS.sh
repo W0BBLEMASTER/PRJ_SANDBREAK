@@ -1,45 +1,59 @@
 #!/bin/sh
-# SBIOS: UTM SE (Alpine ARM64) Deployer for FAKEBOX
-# Reclaiming the Gemini CLI.
+# SBIOS: iSH Remote Daemon Client Protocol
+# Bypasses 32-bit architecture constraints by bridging to a 64-bit host.
 set -e
 
 # Configuration
 FB_ROOT="/home/userland/FAKEBOX"
 FB_BIN="$FB_ROOT/bin"
 
-echo "[*] Preparing FAKEBOX environment for UTM SE (ARM64)..."
-mkdir -p "$FB_BIN" "$FB_ROOT/.gemini"
+echo "[*] Preparing FAKEBOX Client Environment for iSH..."
+mkdir -p "$FB_BIN"
 
 # 1. System Update and Dependencies
 echo "[*] Syncing Alpine dependencies..."
 apk update
-apk add curl tar gzip bash
+apk add openssh-client bash sshpass
 
-# 2. Fetch Upstream Binary (linux_arm64)
-echo "[*] Fetching the engine payload (linux_arm64)..."
-MANIFEST_URL="https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_arm64.json"
-DOWNLOAD_URL=$(curl -fsSL "$MANIFEST_URL" | grep -o '"url":"[^"]*' | cut -d '"' -f 4)
-curl -fsSL "$DOWNLOAD_URL" -o "$FB_ROOT/engine.tar.gz"
+# 2. Remote Host Configuration
+echo "[*] Configuring Remote Android Daemon (Termux) Bridge"
+echo -n "Enter Android Host IP (e.g., 10.64.178.55): "
+read DAEMON_IP
+echo -n "Enter SSH Port (Default for Termux is 8022): "
+read DAEMON_PORT
+DAEMON_PORT=${DAEMON_PORT:-8022}
 
-mkdir -p "$FB_ROOT/extract_tmp"
-tar -xzf "$FB_ROOT/engine.tar.gz" -C "$FB_ROOT/extract_tmp"
-RAW_BIN=$(find "$FB_ROOT/extract_tmp" -type f | head -n 1)
+# 3. Client Wrapper Deployment
+echo "[*] Deploying remote 'acli' wrapper..."
+cat << EOF2 > "$FB_BIN/acli"
+#!/bin/bash
+# iSH to Android SSH Bridge for Antigravity CLI
 
-# 3. Deployment
-echo "[*] Deploying acli..."
-cp "$RAW_BIN" "$FB_BIN/acli"
+REMOTE_IP="$DAEMON_IP"
+REMOTE_PORT="$DAEMON_PORT"
+
+# Bypass headless keyring bugs and enforce UTC on the remote daemon
+DAEMON_ENV="GEMINI_FORCE_FILE_STORAGE=true TZ=UTC"
+
+# Pipe the TUI seamlessly over SSH
+ssh -o StrictHostKeyChecking=no \\
+    -o UserKnownHostsFile=/dev/null \\
+    -p "\$REMOTE_PORT" \\
+    user@"\$REMOTE_IP" \\
+    "\$DAEMON_ENV acli \$@"
+EOF2
+
 chmod +x "$FB_BIN/acli"
-rm -rf "$FB_ROOT/extract_tmp" "$FB_ROOT/engine.tar.gz"
 
 # 4. Session Persistence
 echo "[*] Setting up persistence in ~/.bashrc and ~/.profile..."
 for file in ~/.bashrc ~/.profile ~/.ashrc; do
     touch "$file"
-    grep -q "FAKEBOX" "$file" 2>/dev/null || cat << 'EOF2' >> "$file"
+    grep -q "FAKEBOX" "$file" 2>/dev/null || cat << 'EOF3' >> "$file"
 
 # FAKEBOX Persistence
 export PATH="/home/userland/FAKEBOX/bin:$PATH"
-EOF2
+EOF3
 done
 
-echo "[✓] SBIOS Deployment finished. Type 'acli' to begin."
+echo "[✓] SBIOS Deployment finished. Type 'acli' to connect to the engine."
