@@ -25,10 +25,10 @@ mkdir -p "$FB_ROOT/extract_tmp"
 tar -xzf "$FB_ROOT/engine.tar.gz" -C "$FB_ROOT/extract_tmp"
 RAW_BIN=$(find "$FB_ROOT/extract_tmp" -type f | head -n 1)
 
-# 3. Deployment & Branding (Rejecting Antigravity)
-echo "[*] Exorcising Antigravity branding. Welcome back, Gemini."
-cp "$RAW_BIN" "$FB_BIN/gemini"
-chmod +x "$FB_BIN/gemini"
+# 3. Deployment
+echo "[*] Deploying acli..."
+cp "$RAW_BIN" "$FB_BIN/acli"
+chmod +x "$FB_BIN/acli"
 rm -rf "$FB_ROOT/extract_tmp" "$FB_ROOT/engine.tar.gz"
 
 # 4. Session Persistence
@@ -39,10 +39,7 @@ for file in ~/.bashrc ~/.profile ~/.ashrc; do
 
 # FAKEBOX Persistence
 export PATH="/home/userland/FAKEBOX/bin:$PATH"
-alias gcli='gemini'
-alias acli='gemini'
-alias agy='gemini'
 EOF2
 done
 
-echo "[✓] SBIOS Deployment finished. Type 'gemini' to begin."
+echo "[✓] SBIOS Deployment finished. Type 'acli' to begin."
