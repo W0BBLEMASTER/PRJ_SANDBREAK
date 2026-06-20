@@ -14,19 +14,18 @@ echo "========================================="
 echo "[*] Preparing environment..."
 mkdir -p "$FB_BIN"
 
-echo "[*] Installing required dependencies (Python3, GCC, musl-dev)..."
+echo "[*] Installing required dependencies (Python3, GCC, musl-dev, curl, ca-certificates)..."
 apk update
-apk add python3 gcc musl-dev
+apk add python3 gcc musl-dev curl ca-certificates
 
 echo "[*] Writing Python Instrumentation Script ($PY_SCRIPT)..."
 cat << 'EOF_PYTHON' > "$PY_SCRIPT"
 #!/usr/bin/env python3
 import os
 import struct
-import urllib.request
+import json
 import re
 
-BINARY_URL = "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_arm64.json"
 ORIGINAL_BIN = "agy_original"
 PATCHED_BIN = "patched_agy"
 HOOK_FILE = "sandbreak_ish.c"
@@ -35,13 +34,15 @@ def log(msg):
     print(f"[*] {msg}")
 
 def download_payload():
-    log("Fetching latest Antigravity payload manifest...")
+    log("Fetching latest Antigravity payload manifest using os/curl...")
     try:
-        req = urllib.request.urlopen(BINARY_URL)
-        data = req.read().decode('utf-8')
+        # Use curl directly via os.system to bypass urllib SSL issues in iSH
+        os.system('curl -sL https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_arm64.json > manifest.json')
+        with open('manifest.json', 'r') as f:
+            data = f.read()
         download_url = re.search(r'"url":"([^"]+)"', data).group(1)
         log(f"Downloading from {download_url}...")
-        urllib.request.urlretrieve(download_url, ORIGINAL_BIN)
+        os.system(f'curl -sL "{download_url}" -o {ORIGINAL_BIN}')
         log("Download complete.")
     except Exception as e:
         log(f"Manifest offline or inaccessible. Please place the linux_arm64 binary locally as '{ORIGINAL_BIN}'.")
