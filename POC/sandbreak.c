@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <signal.h>
 #include <ucontext.h>
+#include <stdlib.h>
 
 void sigsys_handler(int sig, siginfo_t *info, void *ucontext) {
     ucontext_t *uc = (ucontext_t *)ucontext;
@@ -29,9 +30,15 @@ void sigsys_handler(int sig, siginfo_t *info, void *ucontext) {
 
 __attribute__((constructor))
 void sandbreak_init(void) {
+    stack_t ss;
+    ss.ss_sp = malloc(SIGSTKSZ + 8192);
+    ss.ss_size = SIGSTKSZ + 8192;
+    ss.ss_flags = 0;
+    sigaltstack(&ss, NULL);
+
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
-    sa.sa_flags = SA_SIGINFO | SA_RESTART;
+    sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
     sa.sa_sigaction = sigsys_handler;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGSYS, &sa, NULL);
