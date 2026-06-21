@@ -79,6 +79,9 @@ def apply_real_hex_patches(data):
         data = data.replace(target, replacement)
         log(" -> Neutered telemetry.googleapis.com to loopback sink.")
 
+    def get(off): return struct.unpack_from("<I", data, off)[0]
+    def put(off, word): struct.pack_into("<I", data, off, word)
+
     def find_section(name_target):
         if data[:4] != b"\x7fELF": return None, None
         e_shoff = struct.unpack_from("<Q", data, 40)[0]
@@ -110,9 +113,26 @@ def apply_real_hex_patches(data):
     if fips_p in data:
         data = data.replace(fips_p, fips_r)
 
-    # B. VA39 TCMalloc Overrides (Optimized with array)
-    import array
-    arr = array.array('I', data[lo:hi])
+    # B. VA39 TCMalloc Overrides
+    for off in range(lo, hi, 4):
+        w = get(off)
+        if (w & 0x7F800000) == 0x53000000:
+            immr = (w >> 16) & 0x3F
+            imms = (w >> 10) & 0x3F
+            if immr == 42 and imms == 44:
+                put(off, (w & ~((0x3F << 16) | (0x3F << 10))) | (35 << 16) | (37 << 10))
+            elif immr == 22 and imms == 21:
+                put(off, (w & ~((0x3F << 16) | (0x3F << 10))) | (29 << 16) | (28 << 10))
+
+    for off in range(lo, hi - 4, 4):
+        if get(off) == 0x92D3800A and get(off + 4) == 0xF2E0000A:
+            put(off, 0x9280000A)
+            put(off + 4, 0xD35DFD4A)
+
+    for off in range(lo, hi, 4):
+        if get(off) == 0xF2E00029:
+            put(off, 0xD3596129)
+
     word_rewrites = {
         0xD2C20009: 0xD2C00409, 0xD2C2000A: 0xD2C0040A, 0xF2C20008: 0xF2DFF408,
         0xF2C20009: 0xF2DFF409, 0xD2C10009: 0xD2C00209, 0xD2C1000A: 0xD2C0020A,
@@ -120,35 +140,15 @@ def apply_real_hex_patches(data):
         0x92560A6A: 0x925D0A6A, 0xD2C3000D: 0xD2C0060D, 0xD2C3000C: 0xD2C0060C,
         0xD2C08008: 0xD2C00108,
     }
-    for i in range(len(arr)):
-        w = arr[i]
-        if (w & 0x7F800000) == 0x53000000:
-            immr = (w >> 16) & 0x3F
-            imms = (w >> 10) & 0x3F
-            if immr == 42 and imms == 44:
-                arr[i] = (w & ~((0x3F << 16) | (0x3F << 10))) | (35 << 16) | (37 << 10)
-            elif immr == 22 and imms == 21:
-                arr[i] = (w & ~((0x3F << 16) | (0x3F << 10))) | (29 << 16) | (28 << 10)
-        elif w == 0x92D3800A and i + 1 < len(arr) and arr[i+1] == 0xF2E0000A:
-            arr[i] = 0x9280000A
-            arr[i+1] = 0xD35DFD4A
-        elif w == 0xF2E00029:
-            arr[i] = 0xD3596129
-        elif w in word_rewrites:
-            arr[i] = word_rewrites[w]
-    data[lo:hi] = arr.tobytes()
+    for off in range(lo, hi, 4):
+        w = get(off)
+        if w in word_rewrites:
+            put(off, word_rewrites[w])
 
-    # C. faccessat2 -> faccessat (Optimized with fast substring search)
-    def put(off, word): struct.pack_into("<I", data, off, word)
-    prefix = b'\xe5\x03\x1f\xaa\xe6\x03\x1f\xaa\xe0\x36\x80\xd2'
-    idx = 0
-    while True:
-        idx = data.find(prefix, idx)
-        if idx == -1:
-            break
-        if idx % 4 == 0 and idx + 15 < len(data) and (data[idx + 15] & 0xFC) == 0x94:
-            put(idx + 8, 0xD2800600)
-        idx += 12
+    # C. faccessat2 -> faccessat
+    for off in range(0, len(data) - 12, 4):
+        if get(off) == 0xAA1F03E5 and get(off + 4) == 0xAA1F03E6 and get(off + 8) == 0xD28036E0 and (get(off + 12) & 0xFC000000) == 0x94000000:
+            put(off + 8, 0xD2800600)
 
     log(" -> Memory and syscall patches applied.")
     return data
