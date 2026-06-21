@@ -71,6 +71,12 @@ long syscall(long n, ...) {
     long a1 = va_arg(args, long); long a2 = va_arg(args, long); long a3 = va_arg(args, long);
     long a4 = va_arg(args, long); long a5 = va_arg(args, long); long a6 = va_arg(args, long);
     va_end(args);
+
+    if (n == 434 || n == 435 || n == 422) {
+        errno = ENOSYS;
+        return -1;
+    }
+
     if (n == SYS_mmap) return (long)handle_mmap_logic((void*)a1, (size_t)a2, (int)a3, (int)a4, (int)a5, (off_t)a6);
     static long (*orig)(long, long, long, long, long, long, long) = NULL;
     if (!orig) orig = dlsym(RTLD_NEXT, "syscall");
