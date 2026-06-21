@@ -2,6 +2,7 @@
 # sbios5.sh: The Master iSH Deployment Protocol (Fully Native Patching)
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FB_ROOT="$HOME/FAKEBOX"
 FB_BIN="$FB_ROOT/bin"
 PY_SCRIPT="$FB_ROOT/SBIOS_patcher.py"
@@ -191,7 +192,7 @@ cd "$FB_ROOT"
 chmod +x "$FB_ROOT/patched_agy"
 
 echo "[*] Deploying ARM64 sandbreak hook..."
-cp "$(dirname "$0")/sandbreak.so" "$FB_BIN/sandbreak.so"
+cp "$SCRIPT_DIR/sandbreak.so" "$FB_BIN/sandbreak.so"
 chmod +x "$FB_BIN/sandbreak.so"
 
 echo "[*] Deploying acli global wrapper script..."
