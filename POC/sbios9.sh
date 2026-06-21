@@ -2,7 +2,7 @@
 # sbios5.sh: The Master iSH Deployment Protocol (Fully Native Patching)
 set -e
 
-FB_ROOT="/home/userland/FAKEBOX"
+FB_ROOT="$HOME/FAKEBOX"
 FB_BIN="$FB_ROOT/bin"
 PY_SCRIPT="$FB_ROOT/SBIOS_patcher.py"
 
@@ -179,7 +179,7 @@ cd "$FB_ROOT"
 python3 "$PY_SCRIPT"
 
 echo "[*] Deploying ARM64 sandbreak hook..."
-cp POC/sandbreak.so "$FB_BIN/sandbreak.so"
+cp "$(dirname "$0")/sandbreak.so" "$FB_BIN/sandbreak.so"
 chmod +x "$FB_BIN/sandbreak.so"
 
 echo "[*] Deploying acli global wrapper script..."
@@ -189,7 +189,7 @@ export GOMEMLIMIT=512MiB
 export GODEBUG=asyncpreemptoff=1 
 export GOMAXPROCS=1 
 export OPENSSL_ia32cap="~0x4000000000000000"
-qemu-aarch64 -E LD_PRELOAD="/home/userland/FAKEBOX/bin/sandbreak.so" -L /home/userland/FAKEBOX/sysroot /home/userland/FAKEBOX/patched_agy "$@"
+qemu-aarch64 -E LD_PRELOAD="$HOME/FAKEBOX/bin/sandbreak.so" -L "$HOME/FAKEBOX/sysroot" "$HOME/FAKEBOX/patched_agy" "$@"
 EOF_ACLI
 
 chmod +x "$FB_BIN/acli"
@@ -203,7 +203,7 @@ for file in ~/.bashrc ~/.profile ~/.ashrc; do
     grep -q "FAKEBOX" "$file" 2>/dev/null || cat << 'EOF_BASH' >> "$file"
 
 # FAKEBOX Persistence
-export PATH="/home/userland/FAKEBOX/bin:$PATH"
+export PATH="$HOME/FAKEBOX/bin:\$PATH"
 EOF_BASH
 done
 
