@@ -14,12 +14,17 @@
 void sigsys_handler(int sig, siginfo_t *info, void *ucontext) {
     ucontext_t *uc = (ucontext_t *)ucontext;
     
-    unsigned long syscall_num = uc->uc_mcontext.regs[8];
+    // Write out a debug message using async-signal-safe write()
+    const char msg[] = "[*] sandbreak.so: Caught SIGSYS trap from emulator. Injecting -ENOSYS.\n";
+    write(2, msg, sizeof(msg) - 1);
     
-    // If it's pidfd_open(434), clone3(435), futex_time64(422), or any other trapped syscall
-    // return -ENOSYS (-38) and bypass the instruction.
+    // Inject -ENOSYS into the return register (X0)
     uc->uc_mcontext.regs[0] = -38;
-    uc->uc_mcontext.pc += 4;
+    
+    // IMPORTANT: Under QEMU user-mode emulation, the program counter (PC)
+    // is advanced to the next instruction *before* the syscall is dispatched to the host.
+    // If we advance the PC again here, we skip a valid instruction and cause a SIGSEGV.
+    // Do NOT execute: uc->uc_mcontext.pc += 4;
 }
 
 __attribute__((constructor))
