@@ -1,59 +1,51 @@
-# SANDBREAK: Your Personal Android CLI Powerhouse 🚀
+# SANDBREAK: Your Personal Cross-Platform CLI Powerhouse 🚀
 
-Tired of Android's file system restrictions? Bored and want to turn your (*HOPEFULLY* ReTerminal, Termux, NeoTerm, ">_", Terminus, and others in DEBUG...) UserLAnd environment into a dedicated terminal for ADB operations and deep Android file system access? SANDBREAK is a personal project designed to transform your UserLAnd setup into a lean, mean, CLI machine.
+Tired of Android's file system restrictions? Bored and want to turn your UserLAnd environment into a dedicated terminal for ADB operations and deep Android file system access? Looking for a completely isolated Antigravity CLI deployment on Windows without making a mess?
+
+SANDBREAK is a personal project designed to transform your environments into a lean, mean, CLI machine. It operates as an uncompromising, secure staging layer for Antigravity, effectively sandboxing its execution and patching architecture-specific bugs in real-time.
 
 ## ✨ What is SANDBREAK?
 
-SANDBREAK is a two-stage setup process for the UserLAnd app on Android. It aims to:
+SANDBREAK offers robust, specialized deployment scripts for both Android (UserLAnd) and Windows. It aims to:
 
-1.  **Create a robust Linux sandbox** on your Android device.
-2.  **Install ADB** directly within that sandbox, allowing you to run ADB commands against your own device from within UserLAnd.
-3.  **Configure your shell** to make GeminiCLI the primary, and effectively *only*, application that launches when you open your UserLAnd session.
-4.  **Unlock access** to those hard-to-reach Android directories like `/OBB` and `/DATA`.
+1.  **Create a robust sandbox** around the Antigravity CLI, preventing environment contamination.
+2.  **Patch Native Bugs in Real-Time:** On Android, it deploys a sophisticated memory monkey patch (`sandbreak.so`) via `LD_PRELOAD` to hotfix deep VA39 Google TCMalloc segfaults specific to PRoot environments.
+3.  **Tame Unruly Terminal Interfaces:** Incorporates advanced Python-based regex TTY output filtering (`out_filter.py`) to silence the dreaded Bubbletea "1;1u" cursor query bleed, while meticulously ensuring the cursor blinks normally during typing.
+4.  **Shadow Environments (Windows):** Hyper-aggressive environment shadowing on Windows (`acli.bat`) ensures the CLI runs entirely contained within an `.acli` directory, bypassing global `PATH` and `USERPROFILE` mutations.
 
-It's your personal command-line gateway to your Android device, built out of curiosity and a desire to bypass limitations.
+## 🚀 The Architecture
 
-## 🛠️ Prerequisites
+### 🐧 Android / Linux (UserLAnd) -> `SANDBREAK2(p2bubble1_acli).sh`
 
-*   An Android device.
-*   The **UserLAnd** app installed from the Google Play Store.
-*   Sufficient storage space and necessary app permissions granted to UserLAnd.
-
-## 🚀 Setup: Two Stages to CLI Mastery
-
-Follow these steps in order within your UserLAnd Linux distribution's terminal:
-
-### Stage 1: Sandbox & ADB Setup (`SANDBREAK1.SH`)
-
-This script prepares your UserLAnd environment, updates packages, installs Node.js (for GeminiCLI), installs GeminiCLI itself, and sets up ADB for on-device access.
+The current Linux deployment script is a highly advanced automated architect. When executed, it:
+- **Acquires Dependencies:** Quietly downloads necessary binaries (like `script`, `python3`, `adb`, `gcc`).
+- **Downloads the Payload:** Pulls the latest official `arm64` Linux Antigravity binary.
+- **Precision VA39 Memory Surgery:** Uses a Python heuristic patcher to dissect the raw ELF binary and rewrite `google_malloc` and `faccessat2` invocations that crash inside PRoot.
+- **Sandbreak Arbitrator (`sandbreak.so`):** Compiles a bespoke shared object library for `LD_PRELOAD` that dynamically fixes `mmap` allocation rules.
+- **The Wrapper (`acli`):** Generates a pristine wrapper script that creates a pseudo-terminal using `script -q`, pipes all output into a dynamic Python regex filter to eliminate terminal capability spam (like `\x1b[?u`), while properly allowing essential ANSI cursor movements and restoration. 
 
 Execute the script:
 ```bash
-sh Sources/SANDBREAK/SANDBREAK1.SH
+sh SANDBREAK2(p2bubble1_acli).sh
 ```
 
-### Stage 2: GeminiCLI Focus (`SANDBREAK2.SH`)
+### 🪟 Windows -> `acli.bat`
 
-This script configures your shell profile to ensure that GeminiCLI is the main application that launches upon starting your UserLAnd session.
+The Windows script is a surgical bootstrapper designed for total isolation.
+- **Staging Directory:** Creates an `.acli` sandbox directory relative to the script.
+- **Shadowing:** Overrides `LOCALAPPDATA`, `USERPROFILE`, `HOMEDRIVE`, and `HOMEPATH` for the execution context of the script.
+- **Silent Bootstrapping:** If it detects a virgin environment, it transparently downloads and executes the official PowerShell installer using `--skip-path` and `--skip-aliases` to ensure zero global footprint.
+- **TUI Invocation:** Proxies all command-line arguments flawlessly to the isolated `agy.exe` binary.
 
-Execute the second script:
-```bash
-sh Sources/SANDBREAK/SANDBREAK2.SH
+Execute the batch script:
+```cmd
+acli.bat
 ```
-
-## 💡 Usage
-
-Once both stages are complete, when you launch your UserLAnd session, you should be greeted by the GeminiCLI interface. From here, you can:
-
-*   Run standard Linux commands.
-*   Execute ADB commands against your device (e.g., `adb devices`, `adb pull /sdcard/Android/obb/some_game/main.obb .`).
-*   Access and manage files in restricted directories like `/sdcard/Android/obb/` or `/sdcard/Android/data/`.
 
 ## ⚠️ Notes & Caveats
 
-*   This is a personal project born out of boredom. It's functional but might have quirks.
-*   `SANDBREAK2.SH` is designed to make GeminiCLI the *only* bootable app. Exiting GeminiCLI might effectively close your UserLAnd session or require re-launching it.
-*   Compatibility may vary depending on your Android version, device manufacturer, and UserLAnd version.
-*   Always ensure you have the necessary permissions granted to UserLAnd.
+*   This is a personal project born out of boredom. It's functional but heavily tailored for specific edge cases (like the UserLAnd `mmap` and `1;1u` bugs).
+*   The Android wrapper contains an auto-revive loop. If `agy` crashes with an unexpected signal, it restarts it and cleans up the cursor using `tput cnorm`.
+*   Always ensure you have the necessary permissions granted to UserLAnd if attempting to run local `adb` commands against your own device.
 
 Happy CLI-ing!
